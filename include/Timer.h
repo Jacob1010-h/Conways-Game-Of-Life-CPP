@@ -12,15 +12,16 @@ public:
 	void Pause();
 	void UnPause();
 
-	Uint32 GetTicks();
+	[[nodiscard]] Uint32 GetTicks() const;
 
-	bool IsStarted();
-	bool IsPaused();
+	[[nodiscard]] bool IsStarted() const;
+
+	[[nodiscard]] bool IsPaused() const;
 
 private:
-	Uint32 m_startTicks;
-	Uint32 m_pausedTicks;
+	Uint32 _startTicks;
+	Uint32 _pausedTicks;
 
-	bool m_paused;
-	bool m_started;
+	bool _paused;
+	bool _started;
 };

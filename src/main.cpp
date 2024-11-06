@@ -1,9 +1,8 @@
-#include"Game.h"
+#include"Window.h"
 
-int main(int argc, char* args[])
-{
-	Game game;
-	game.GameLoop();
+int main(int argc, char *args[]) {
+    Window window;
+    window.refresh();
 
-	return 0;
+    return 0;
 }
