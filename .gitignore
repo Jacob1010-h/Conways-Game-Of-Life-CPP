@@ -1,0 +1,9 @@
+**.vcxproj
+**.vcxproj.filters
+**.vcxproj.user
+build/
+bin/
+bin-int/
+vendor/
+files/
+**.ini
