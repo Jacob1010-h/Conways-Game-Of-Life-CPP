@@ -1,7 +1,10 @@
 #include "Window.h"
 
+Game gameOfLife;
+
 Window::Window()
-    : _quit(false), _countedFrames(0), _leftBottonHold(false), _rightBottonHold(false), _canDraw(false), _speed(30) {
+    : _quit(false), _countedFrames(0), _leftBottonHold(false), _rightBottonHold(false), _canDraw(false) {
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         std::cout << "SDL could not initialize! SDL Error: " << SDL_GetError() << std::endl;
 
@@ -114,7 +117,7 @@ void Window::update() {
     ImGui::SameLine(238.f / 2.f - 30);
 
     if (ImGui::Button("Reset", ImVec2(60, 30))) {
-        memset(_cells, 0, sizeof(_cells));
+        gameOfLife.resetCellsMemAlloc();
     }
 
     if (ImGui::IsWindowHovered() || ImGui::IsAnyItemActive())
@@ -125,10 +128,16 @@ void Window::update() {
     ImGui::End();
 
     if (_canDraw) {
-        if (_leftBottonHold)
-            _cells[_mouseY / CELL_SIZE][_mouseX / CELL_SIZE] = true;
-        else if (_rightBottonHold)
-            _cells[_mouseY / CELL_SIZE][_mouseX / CELL_SIZE] = false;
+        if (_leftBottonHold) {
+            const int x = _mouseY / CELL_SIZE;
+            const int y = _mouseX / CELL_SIZE;
+            gameOfLife.setCell(x, y, true);
+        }
+        else if (_rightBottonHold) {
+            const int x = _mouseY / CELL_SIZE;
+            const int y = _mouseX / CELL_SIZE;
+            gameOfLife.setCell(x, y, false);
+        }
     }
 }
 
@@ -141,7 +150,7 @@ void Window::render() {
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
 
-    for (int i = 0; i < NUM_CELLS; i++) {
+    for (int i = 0; i < gameOfLife.getBoardSize(); i++) {
         vertical_rect.x = (CELL_SIZE * i) - 1;
         SDL_RenderDrawRect(renderer, &vertical_rect);
 
@@ -160,10 +169,10 @@ void Window::render() {
         SDL_RenderFillRect(renderer, &cell_rect);
 
     // draw rect
-    for (int y = 0; y < NUM_CELLS; y++) {
-        for (int x = 0; x < NUM_CELLS; x++) {
-            if (_cells[y][x] == 1) {
-                cell_rect = {x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1};
+    for (int row = 0; row < gameOfLife.getBoardSize(); row++) {
+        for (int col = 0; col < gameOfLife.getBoardSize(); col++) {
+            if (gameOfLife.getCell(row,col) == 1) {
+                cell_rect = {col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1};
                 SDL_RenderFillRect(renderer, &cell_rect);
             }
         }

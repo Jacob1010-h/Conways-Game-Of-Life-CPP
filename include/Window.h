@@ -7,6 +7,7 @@
 #include <imgui_impl_sdlrenderer.h>
 #include <string>
 
+#include "Game.h"
 #include "Timer.h"
 
 class Window
@@ -32,11 +33,6 @@ private:
   const int SCREEN_WIDTH = 1000;
   const int SCREEN_HEIGHT = 768;
 
-  static constexpr int NUM_CELLS = 130;
-
-  bool _cells[NUM_CELLS][NUM_CELLS]{};
-  bool _backupCells[NUM_CELLS][NUM_CELLS]{};
-
   const int SCREEN_FPS = 60;
   const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
 
@@ -51,7 +47,6 @@ private:
 
   bool _canDraw;
 
-  int _speed;
 
   float _currentTime;
 };
