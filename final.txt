@@ -1,0 +1,36 @@
+TITLE: Jacob Hotz, Section F, Conways Game of Life.
+
+PROBLEM DESCRIPTION: Conway's Game of Life is a cellular automaton that is played on a 2D
+                     square grid. Each square (or "cell") on the grid can be either alive
+                     or dead, and they evolve according to the following rules:
+                         - Any live cell with fewer than two live neighbours dies (referred
+                         to as underpopulation).
+                         - Any live cell with more than three live neighbours dies (referred
+                         to as overpopulation).
+                         - Any live cell with two or three live neighbours lives, unchanged,
+                         to the next generation.
+                         - Any dead cell with exactly three live neighbours comes to life.
+                     ---------------------------------------------------------------------
+                     The initial configuration of cells can be created by a human, but all
+                     generations thereafter are completely determined by the above rules.
+                     The goal of the game is to find patterns that evolve in interesting ways --
+                     something that people have now been doing for over 50 years
+
+PROGRAM DOCUMENTATION: The users are supposed to interact with the GUI of the program to specify if they have a file
+to upload, if they want to change the starting coords, start, pause, step, or reset the simulation. The program should
+be built with cmake and that it is on Windows (this was the platform I tested it on). All project files should be stored
+within the .idea folder. Everything was built and programmed within CLion.
+
+CLASS DESCRIPTION: I created a few custom classes, like Timer, Window, and Pattern (enum). The timer class was supposed to
+regulate the FPS, the Window keeps track of the current game state and what is supposed to be displayed. The class
+allowed me to expand my program to a level that could be viewed from a broad perspective.
+
+LIST DATA STRUCTURE: The list data structure that I used was a combination of an array and a vector. This structure
+was chosen inorder to allow for a robust connection of cells, but also to allow for a flexible pattern to be applied
+to that cell array.
+
+FILE I/O: It was incorporated to allow for users to input a pattern from a file and use that in their program.
+
+REFLECTIONS: This project taught me how to structure code a lot better to allow for better code readability.
+The structure of my program evolved through this assignment, and it has helped me make not only better code but also
+a prettier and more robust program.

@@ -8,141 +8,6 @@
 #include <sstream>
 #include <algorithm>
 
-struct Pattern {
-    std::vector<std::vector<bool> > pattern;
-    int numRows = 0;
-    int numCols = 0;
-    std::string title;
-    std::vector<std::string> description;
-    std::string rule;
-    int positionX = 0;
-    int positionY = 0;
-
-
-    Pattern() {
-    }
-
-
-    ~Pattern() {
-        pattern.clear();
-    }
-
-    [[nodiscard]] bool getCell(const int x, const int y) const {
-        return pattern[x][y];
-    }
-
-    void setCell(const int x, const int y, const bool value) {
-        pattern[x][y] = value;
-    }
-
-
-    void toPattern(const std::string &patternData) {
-        pattern.clear();
-        description.clear();
-        rule.clear();
-        title.clear();
-        positionX = 0;
-        positionY = 0;
-
-        std::istringstream stream(patternData);
-        std::string line;
-        int maxCols = 0;
-
-
-        std::vector<std::string> lines;
-        bool readingPattern = false;
-
-        while (std::getline(stream, line)) {
-            line = line.substr(0, line.find_last_not_of(" \n\r\t") + 1);
-
-
-            if (line.empty()) {
-                continue;
-            }
-
-
-            if (line[0] == '#' && line.find("Life 1.05") != std::string::npos) {
-                title = line;
-                continue;
-            }
-
-
-            if (line[0] == '#' && line.find("#D") != std::string::npos) {
-                description.push_back(line.substr(2));
-                continue;
-            }
-
-
-            if (line[0] == '#' && line.find("#R") != std::string::npos) {
-                rule = line.substr(2);
-                continue;
-            } else if (line[0] == '#' && line.find("#N") != std::string::npos) {
-                rule = "#R 23/3";
-                continue;
-            }
-
-
-            if (line[0] == '#' && line.find("#P") != std::string::npos) {
-                std::istringstream positionStream(line.substr(2));
-                positionStream >> positionX >> positionY;
-                continue;
-            }
-
-
-            readingPattern = true;
-            if (readingPattern) {
-                lines.push_back(line);
-                maxCols = std::max(maxCols, static_cast<int>(line.size()));
-            }
-        }
-
-
-        numRows = lines.size();
-        numCols = maxCols;
-
-
-        pattern.resize(numRows, std::vector<bool>(numCols, false));
-
-
-        for (int y = 0; y < numRows; ++y) {
-            const std::string &line = lines[y];
-            for (int x = 0; x < line.size(); ++x) {
-                if (line[x] == '*') {
-                    setCell(x, y, true);
-                } else if (line[x] == '.') {
-                    setCell(x, y, false);
-                }
-            }
-        }
-
-    }
-
-
-    void printPattern() const {
-        for (const auto &row: pattern) {
-            for (bool cell: row) {
-                std::cout << (cell ? '*' : '.') << " ";
-            }
-            std::cout << '\n';
-        }
-    }
-
-
-    void printSize() const {
-        std::cout << "Rows: " << numRows << ", Columns: " << numCols << std::endl;
-    }
-
-
-    void printMetadata() const {
-        std::cout << "Title: " << title << std::endl;
-        for (const auto &line: description) {
-            std::cout << "Description: " << line << std::endl;
-        }
-        std::cout << "Rule: " << rule << std::endl;
-        std::cout << "Position: (" << positionX << ", " << positionY << ")\n";
-    }
-};
-
 Window::Window()
     : _quit(false), m_event(), _cells{}, _backupCells{}, _countedFrames(0), _mouseX(0), _mouseY(0),
       _leftBottonHold(false),
@@ -150,7 +15,6 @@ Window::Window()
       _canDraw(false),
       _pause(false),
       _speed(15) {
-
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         std::cout << "SDL could not initialize! SDL Error: " << SDL_GetError() << std::endl;
 
@@ -192,51 +56,11 @@ Window::~Window() {
     SDL_Quit();
 }
 
-void Window::gameLoop() {
-    while (!_quit) {
-        _capTimer.Start();
-
-        while (SDL_PollEvent(&m_event) != 0) {
-            ImGui_ImplSDL2_ProcessEvent(&m_event);
-            if (m_event.type == SDL_QUIT)
-                _quit = true;
-            if (m_event.type == SDL_MOUSEBUTTONDOWN) {
-                if (m_event.button.button == SDL_BUTTON_LEFT) {
-                    _leftBottonHold = true;
-                } else if (m_event.button.button == SDL_BUTTON_RIGHT) {
-                    _rightBottonHold = true;
-                }
-            }
-
-            if (m_event.type == SDL_MOUSEBUTTONUP) {
-                if (m_event.button.button == SDL_BUTTON_LEFT)
-                    _leftBottonHold = false;
-                else if (m_event.button.button == SDL_BUTTON_RIGHT)
-                    _rightBottonHold = false;
-            }
-        }
-
-        float avgFps = static_cast<float>(_countedFrames) / (static_cast<float>(_fpsTimer.GetTicks()) / 1000.f);
-        if (avgFps > 2000000)
-            avgFps = 0.f;
-
-        update();
-        render();
-
-        ++_countedFrames;
-
-        int framesTicks = static_cast<int>(_capTimer.GetTicks());
-        if (framesTicks < SCREEN_TICKS_PER_FRAME) {
-            SDL_Delay(SCREEN_TICKS_PER_FRAME - framesTicks);
-        }
-    }
-}
-
-void placePattern(Pattern pattern, bool cells[130][130], const ImVec2 posOverride) {
+void Window::placePattern(Pattern pattern, bool cells[NUM_CELLS][NUM_CELLS], ImVec2 posOverride) {
     // Loop through the pattern and copy it into the `cells` grid
     if (posOverride.x != -1 && posOverride.y != -1) {
-        pattern.positionX = posOverride.x;
-        pattern.positionY = posOverride.y;
+        pattern.positionX = static_cast<int>(posOverride.x);
+        pattern.positionY = static_cast<int>(posOverride.y);
     }
 
     for (int y = 0; y < pattern.numRows; ++y) {
@@ -253,7 +77,7 @@ void placePattern(Pattern pattern, bool cells[130][130], const ImVec2 posOverrid
     }
 }
 
-auto read_file(std::string_view path) -> std::string {
+auto Window::read_file(std::string_view path) -> std::string {
     constexpr auto read_size = std::size_t(4096);
     auto stream = std::ifstream(path.data());
     stream.exceptions(std::ios_base::badbit);
@@ -264,36 +88,14 @@ auto read_file(std::string_view path) -> std::string {
 
     auto out = std::string();
     auto buf = std::string(read_size, '\0');
-    while (stream.read(& buf[0], read_size)) {
+    while (stream.read(&buf[0], read_size)) {
         out.append(buf, 0, stream.gcount());
     }
     out.append(buf, 0, stream.gcount());
     return out;
 }
 
-void Window::update() {
-    ImGui_ImplSDLRenderer_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::Begin("Cellular Automaton", nullptr,
-                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
-
-    ImGui::SetWindowPos(ImVec2(128 * 6, 0));
-    ImGui::SetWindowSize(ImVec2(238, static_cast<float>(Window::SCREEN_HEIGHT)));
-
-    //buttons
-    ImGui::NewLine();
-    ImGui::NewLine();
-    ImGui::NewLine();
-    ImGui::SameLine(238.f / 2.f - 35);
-
-    ImGui::Text("Generation");
-    const std::string str = std::to_string(_generation);
-    ImGui::NewLine();
-    ImGui::SameLine(238.f / 2.f - 10);
-    ImGui::Text(str.c_str());
-
+void Window::createPausedButtons() {
     if (!_pause) {
         ImGui::NewLine();
         ImGui::NewLine();
@@ -308,10 +110,10 @@ void Window::update() {
         ImGui::NewLine();
         ImGui::SameLine(238.f / 2.f - 60);
         if (ImGui::Button("Import Pattern", ImVec2(120, 30))) {
-            nfdchar_t *outPath = NULL;
-            nfdresult_t result = NFD_OpenDialog( NULL, NULL, &outPath );
+            nfdchar_t *outPath = nullptr;
+            nfdresult_t result = NFD_OpenDialog(nullptr, nullptr, &outPath);
 
-            if ( result == NFD_OKAY ) {
+            if (result == NFD_OKAY) {
                 puts("Success!");
                 puts(outPath);
                 Pattern p;
@@ -320,15 +122,16 @@ void Window::update() {
                 free(outPath);
                 posOverideX = -1;
                 posOverideY = -1;
-            }
-            else if ( result == NFD_CANCEL ) {
+            } else if (result == NFD_CANCEL) {
                 puts("User pressed cancel.");
-            }
-            else {
-                printf("Error: %s\n", NFD_GetError() );
+            } else {
+                printf("Error: %s\n", NFD_GetError());
             }
         }
     }
+}
+
+void Window::createPlayPauseControls() {
     ImGui::NewLine();
     ImGui::NewLine();
     ImGui::NewLine();
@@ -388,8 +191,63 @@ void Window::update() {
         _canDraw = true;
 
     ImGui::End();
+}
 
+void Window::createStartingButtons() const {
+    ImGui::NewLine();
+    ImGui::NewLine();
+    ImGui::NewLine();
+    ImGui::SameLine(238.f / 2.f - 35);
 
+    ImGui::Text("Generation");
+    const std::string str = std::to_string(_generation);
+    ImGui::NewLine();
+    ImGui::SameLine(238.f / 2.f - 10);
+    ImGui::Text(str.c_str());
+}
+
+void Window::createButtons() {
+    createStartingButtons();
+    createPausedButtons();
+    createPlayPauseControls();
+}
+
+void Window::gameLoop() {
+    while (!_quit) {
+        _capTimer.Start();
+
+        while (SDL_PollEvent(&m_event) != 0) {
+            ImGui_ImplSDL2_ProcessEvent(&m_event);
+            if (m_event.type == SDL_QUIT)
+                _quit = true;
+            if (m_event.type == SDL_MOUSEBUTTONDOWN) {
+                if (m_event.button.button == SDL_BUTTON_LEFT) {
+                    _leftBottonHold = true;
+                } else if (m_event.button.button == SDL_BUTTON_RIGHT) {
+                    _rightBottonHold = true;
+                }
+            }
+
+            if (m_event.type == SDL_MOUSEBUTTONUP) {
+                if (m_event.button.button == SDL_BUTTON_LEFT)
+                    _leftBottonHold = false;
+                else if (m_event.button.button == SDL_BUTTON_RIGHT)
+                    _rightBottonHold = false;
+            }
+        }
+
+        update();
+        render();
+
+        ++_countedFrames;
+
+        if (const int framesTicks = static_cast<int>(_capTimer.GetTicks()); framesTicks < SCREEN_TICKS_PER_FRAME) {
+            SDL_Delay(SCREEN_TICKS_PER_FRAME - framesTicks);
+        }
+    }
+}
+
+void Window::checkIfDrawing() {
     if (_canDraw) {
         const bool mouseInside = _mouseX >= 0 && _mouseY >= 0 && _mouseX < SCREEN_HEIGHT && _mouseY < SCREEN_WIDTH;
         if (_leftBottonHold) {
@@ -406,6 +264,22 @@ void Window::update() {
             }
         }
     }
+}
+
+void Window::update() {
+    ImGui_ImplSDLRenderer_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("Cellular Automaton", nullptr,
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
+
+    ImGui::SetWindowPos(ImVec2(128 * 6, 0));
+    ImGui::SetWindowSize(ImVec2(238, static_cast<float>(Window::SCREEN_HEIGHT)));
+
+    createButtons();
+
+    checkIfDrawing();
 }
 
 void Window::render() {

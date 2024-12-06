@@ -1,4 +1,3 @@
-#include "Pattern.h"
 #include "Window.h"
 
 int main(int argc, char *args[]) {
