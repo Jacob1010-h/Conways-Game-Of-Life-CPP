@@ -1,22 +1,20 @@
-#include "Window.h"
+#include"Game.h"
 
-Game gameOfLife;
-
-Window::Window()
-    : _quit(false), _countedFrames(0), _leftBottonHold(false), _rightBottonHold(false), _canDraw(false) {
-
+Game::Game()
+    : _quit(false), _countedFrames(0), _leftBottonHold(false), _rightBottonHold(false), _canDraw(false), _pause(false),
+      _speed(30) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         std::cout << "SDL could not initialize! SDL Error: " << SDL_GetError() << std::endl;
 
-    window = SDL_CreateWindow("Conways Game Of Life", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH,
-                              SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    _window = SDL_CreateWindow("Cellular Automaton", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH,
+                               SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 
-    if (window == nullptr)
+    if (_window == nullptr)
         std::cout << "Window could not be created! SDL Error: " << SDL_GetError() << std::endl;
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    _renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
 
-    if (renderer == nullptr)
+    if (_renderer == nullptr)
         std::cout << "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
 
     // Setup ImGui context
@@ -25,46 +23,41 @@ Window::Window()
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
-    ImGui_ImplSDLRenderer_Init(renderer);
+    ImGui_ImplSDL2_InitForSDLRenderer(_window, _renderer);
+    ImGui_ImplSDLRenderer_Init(_renderer);
 
     _fpsTimer.Start();
 
+    _generation = 0;
+    _play = false;
     _currentTime = 0;
 }
 
-Window::~Window() {
+Game::~Game() {
     ImGui_ImplSDLRenderer_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(_renderer);
+    SDL_DestroyWindow(_window);
 
     SDL_Quit();
 }
 
-void Window::checkQuit() {
-    if (m_event.type == SDL_QUIT)
-        _quit = true;
-}
-
-void Window::refresh() {
+void Game::GameLoop() {
     while (!_quit) {
         _capTimer.Start();
 
         while (SDL_PollEvent(&m_event) != 0) {
             ImGui_ImplSDL2_ProcessEvent(&m_event);
-
-            checkQuit();
-
+            if (m_event.type == SDL_QUIT)
+                _quit = true;
             if (m_event.type == SDL_MOUSEBUTTONDOWN) {
-                if (m_event.button.button == SDL_BUTTON_LEFT)
+                if (m_event.button.button == SDL_BUTTON_LEFT) {
                     _leftBottonHold = true;
-
-                else if (m_event.button.button == SDL_BUTTON_RIGHT)
-
+                } else if (m_event.button.button == SDL_BUTTON_RIGHT) {
                     _rightBottonHold = true;
+                }
             }
 
             if (m_event.type == SDL_MOUSEBUTTONUP) {
@@ -75,41 +68,78 @@ void Window::refresh() {
             }
         }
 
-        if (float avgFps = _countedFrames / (_fpsTimer.GetTicks() / 1000.f); avgFps > 2000000)
+        float avgFps = _countedFrames / (_fpsTimer.GetTicks() / 1000.f);
+        if (avgFps > 2000000)
             avgFps = 0.f;
 
-        update();
-        render();
+        Update();
+        Render();
 
         ++_countedFrames;
 
-        if (const int framesTicks = _capTimer.GetTicks(); framesTicks < SCREEN_TICKS_PER_FRAME) {
+        int framesTicks = _capTimer.GetTicks();
+        if (framesTicks < SCREEN_TICKS_PER_FRAME) {
             SDL_Delay(SCREEN_TICKS_PER_FRAME - framesTicks);
         }
     }
 }
 
-void Window::update() {
+void Game::Update() {
     ImGui_ImplSDLRenderer_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("Conways Game Of Life Control", nullptr,
+    ImGui::Begin("Cellular Automaton", 0,
                  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
 
     ImGui::SetWindowPos(ImVec2(128 * 6, 0));
     ImGui::SetWindowSize(ImVec2(238, 768));
 
-    // buttons
+    //buttons
     ImGui::NewLine();
     ImGui::NewLine();
     ImGui::NewLine();
     ImGui::SameLine(238.f / 2.f - 35);
 
+    ImGui::Text("Generation");
+    std::string str = std::to_string(_generation);
+    ImGui::NewLine();
+    ImGui::SameLine(238.f / 2.f - 10);
+    ImGui::Text(str.c_str());
+
     ImGui::NewLine();
     ImGui::NewLine();
     ImGui::NewLine();
     ImGui::SameLine(238.f / 2.f - 30);
+
+    if (!_pause) {
+        if (ImGui::Button("Run", ImVec2(60, 30))) {
+            _pause = true;
+            _play = true;
+        }
+    } else {
+        if (ImGui::Button("Pause", ImVec2(60, 30))) {
+            _play = false;
+            _pause = false;
+        }
+    }
+
+    if (_play) {
+        _currentTime += (float) SCREEN_TICKS_PER_FRAME / 1000;
+        if (_currentTime >= 1.f / _speed) {
+            Life();
+            _currentTime = 0.f;
+        }
+    }
+
+    ImGui::NewLine();
+    ImGui::NewLine();
+    ImGui::NewLine();
+    ImGui::SameLine(238.f / 2.f - 30);
+
+    if (ImGui::Button("Step", ImVec2(60, 30))) {
+        Life();
+    }
 
     ImGui::NewLine();
     ImGui::NewLine();
@@ -117,8 +147,19 @@ void Window::update() {
     ImGui::SameLine(238.f / 2.f - 30);
 
     if (ImGui::Button("Reset", ImVec2(60, 30))) {
-        gameOfLife.resetCellsMemAlloc();
+        memset(_cells, 0, sizeof(_cells));
+        _generation = 0;
     }
+
+    ImGui::NewLine();
+    ImGui::NewLine();
+    ImGui::NewLine();
+    ImGui::SameLine(238.f / 2.f - 20);
+    ImGui::Text("Speed");
+    ImGui::NewLine();
+    ImGui::SameLine(238.f / 2.f - 75);
+    ImGui::SliderInt(" ", &_speed, 0, 100);
+
 
     if (ImGui::IsWindowHovered() || ImGui::IsAnyItemActive())
         _canDraw = false;
@@ -128,59 +169,80 @@ void Window::update() {
     ImGui::End();
 
     if (_canDraw) {
-        if (_leftBottonHold) {
-            const int x = _mouseY / CELL_SIZE;
-            const int y = _mouseX / CELL_SIZE;
-            gameOfLife.setCell(x, y, true);
-        }
-        else if (_rightBottonHold) {
-            const int x = _mouseY / CELL_SIZE;
-            const int y = _mouseX / CELL_SIZE;
-            gameOfLife.setCell(x, y, false);
-        }
+        if (_leftBottonHold)
+            _cells[_mouseY / CELL_SIZE][_mouseX / CELL_SIZE] = 1;
+        else if (_rightBottonHold)
+            _cells[_mouseY / CELL_SIZE][_mouseX / CELL_SIZE] = 0;
     }
 }
 
-void Window::render() {
+void Game::Render() {
     ImGui::Render();
 
     SDL_Rect vertical_rect = {0, 0, 1, SCREEN_HEIGHT};
     SDL_Rect horizontal_rect = {0, 0, SCREEN_WIDTH, 1};
 
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
 
-    for (int i = 0; i < gameOfLife.getBoardSize(); i++) {
+    SDL_RenderClear(_renderer);
+    SDL_SetRenderDrawColor(_renderer, 40, 40, 40, 255);
+
+
+    for (int i = 0; i < NUM_CELLS; i++) {
         vertical_rect.x = (CELL_SIZE * i) - 1;
-        SDL_RenderDrawRect(renderer, &vertical_rect);
+        SDL_RenderDrawRect(_renderer, &vertical_rect);
 
         horizontal_rect.y = (CELL_SIZE * i) - 1;
-        SDL_RenderDrawRect(renderer, &horizontal_rect);
+        SDL_RenderDrawRect(_renderer, &horizontal_rect);
     }
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 255);
 
-    // mouse pos rect
+    //mouse pos rect
     SDL_GetMouseState(&_mouseX, &_mouseY);
     _mouseX -= _mouseX % CELL_SIZE;
     _mouseY -= _mouseY % CELL_SIZE;
     SDL_Rect cell_rect = {_mouseX, _mouseY, CELL_SIZE - 1, CELL_SIZE - 1};
     if (_canDraw)
-        SDL_RenderFillRect(renderer, &cell_rect);
+        SDL_RenderFillRect(_renderer, &cell_rect);
 
-    // draw rect
-    for (int row = 0; row < gameOfLife.getBoardSize(); row++) {
-        for (int col = 0; col < gameOfLife.getBoardSize(); col++) {
-            if (gameOfLife.getCell(row,col) == 1) {
-                cell_rect = {col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1};
-                SDL_RenderFillRect(renderer, &cell_rect);
+    //draw rect
+    for (int y = 0; y < NUM_CELLS; y++) {
+        for (int x = 0; x < NUM_CELLS; x++) {
+            if (_cells[y][x] == 1) {
+                cell_rect = {x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1};
+                SDL_RenderFillRect(_renderer, &cell_rect);
             }
         }
     }
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(_renderer, 0, 0, 0, 255);
 
     ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
 
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(_renderer);
+}
+
+void Game::Life() {
+    _generation++;
+    for (int y = 0; y < NUM_CELLS; y++) {
+        for (int x = 0; x < NUM_CELLS; x++) {
+            _backupCells[y][x] = _cells[y][x];
+        }
+    }
+
+    int neighbours = 0;
+    for (int y = 0; y < NUM_CELLS; y++) {
+        for (int x = 0; x < NUM_CELLS; x++) {
+            neighbours = _backupCells[y - 1][x - 1] + _backupCells[y - 1][x] + _backupCells[y - 1][x + 1] +
+                         _backupCells[y][x - 1] + _backupCells[y][x + 1] +
+                         _backupCells[y + 1][x - 1] + _backupCells[y + 1][x] + _backupCells[y + 1][x + 1];
+
+            if (neighbours < 2)
+                _cells[y][x] = 0;
+            else if (neighbours > 3)
+                _cells[y][x] = 0;
+            else if (neighbours == 3)
+                _cells[y][x] = 1;
+        }
+    }
 }
