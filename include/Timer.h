@@ -2,26 +2,28 @@
 
 #include <SDL.h>
 
-class Timer
-{
+class Timer {
 public:
-	Timer();
+    Timer();
 
-	void Start();
-	void Stop();
-	void Pause();
-	void UnPause();
+    void Start();
 
-	[[nodiscard]] Uint32 GetTicks() const;
+    void Stop();
 
-	[[nodiscard]] bool IsStarted() const;
+    void Pause();
 
-	[[nodiscard]] bool IsPaused() const;
+    void UnPause();
+
+    [[nodiscard]] Uint32 GetTicks() const;
+
+    [[nodiscard]] bool IsStarted() const;
+
+    [[nodiscard]] bool IsPaused() const;
 
 private:
-	Uint32 _startTicks;
-	Uint32 _pausedTicks;
+    Uint32 _startTicks;
+    Uint32 _pausedTicks;
 
-	bool _paused;
-	bool _started;
+    bool _paused;
+    bool _started;
 };

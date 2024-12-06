@@ -2,13 +2,9 @@ cmake_minimum_required(VERSION 3.25.0)
 
 project(Conways-Game-Of-Life)
 
-set(DEPS_DIR ${CMAKE_SOURCE_DIR}/build/external)
+set(DEPS_DIR ${CMAKE_SOURCE_DIR}/external)
 
 set(BUILD_SHARED_LIBS OFF)
-
-add_subdirectory(external/SDL)
-
-include_directories(${CMAKE_SOURCE_DIR}/external/SDL/include/)
 
 set(IMGUI_SOURCE_FILES
         external/imgui/imgui.cpp
@@ -29,14 +25,20 @@ set(IMGUI_HEADER_FILES
         external/imgui/imgui_impl_sdlrenderer.h
         external/imgui/imgui_impl_sdl.h)
 
+add_subdirectory(external/SDL)
+add_subdirectory(external/nativefiledialog)
+
+include_directories(${DEPS_DIR}/SDL/include/)
+include_directories(${DEPS_DIR}/nativefiledialog/src/include)
+
 add_library(imgui STATIC ${IMGUI_SOURCE_FILES} ${IMGUI_HEADER_FILES})
-target_include_directories(imgui PUBLIC external/imgui/)
 
 file(GLOB SOURCE_FILES src/*.cpp)
 file(GLOB HEADER_FILES include/*.h)
 
 add_executable(Conways-Game-Of-Life ${SOURCE_FILES} ${HEADER_FILES})
 
+target_include_directories(imgui PUBLIC external/imgui/)
 target_include_directories(Conways-Game-Of-Life PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 
-target_link_libraries(Conways-Game-Of-Life imgui SDL2-static SDL2main)
+target_link_libraries(Conways-Game-Of-Life nativefiledialog imgui SDL2-static SDL2main )

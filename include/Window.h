@@ -6,22 +6,36 @@
 #include<imgui_impl_sdl.h>
 #include<imgui_impl_sdlrenderer.h>
 #include<string>
+#include <vector>
+#include "Pattern.h"
 
+#include "Pattern.h"
 #include"Timer.h"
 
-class Game {
+class Window {
 public:
-    Game();
+    Window();
 
-    ~Game();
+    ~Window();
 
-    void GameLoop();
+    void gameLoop();
 
-    void Update();
+    static void createPopUp();
 
-    void Render();
+    void update();
 
-    void Life();
+    void render();
+
+    void life();
+
+    static constexpr int SCREEN_FPS = 60;
+    static constexpr int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+    static constexpr int SCREEN_WIDTH = 1000;
+    static constexpr int SCREEN_HEIGHT = 768;
+    static constexpr int CELL_SIZE = 6;
+
+    int posOverideX = -1;
+    int posOverideY = -1;
 
 private:
     SDL_Window *_window;
@@ -30,17 +44,14 @@ private:
     bool _quit;
     SDL_Event m_event;
 
-    const int CELL_SIZE = 6;
-    const int SCREEN_WIDTH = 1000;
-    const int SCREEN_HEIGHT = 768;
+
+
+
 
     static constexpr int NUM_CELLS = 130;
 
     bool _cells[NUM_CELLS][NUM_CELLS];
     bool _backupCells[NUM_CELLS][NUM_CELLS];
-
-    const int SCREEN_FPS = 60;
-    const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
 
     Timer _fpsTimer;
     Timer _capTimer;
