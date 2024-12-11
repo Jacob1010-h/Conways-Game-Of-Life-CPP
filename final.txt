@@ -19,7 +19,16 @@ PROBLEM DESCRIPTION: Conway's Game of Life is a cellular automaton that is playe
 PROGRAM DOCUMENTATION: The users are supposed to interact with the GUI of the program to specify if they have a file
 to upload, if they want to change the starting coords, start, pause, step, or reset the simulation. The program should
 be built with cmake and that it is on Windows (this was the platform I tested it on). All project files should be stored
-within the .idea folder. Everything was built and programmed within CLion.
+within the .idea folder. Everything was built and programmed within CLion. If the user wants to add a file they have to
+make sure it is a Life 1.05v file:
+```
+#Life 1.05
+#D This is a glider.
+#P 25 25
+.*.
+..*
+***
+```
 
 CLASS DESCRIPTION: I created a few custom classes, like Timer, Window, and Pattern (enum). The timer class was supposed to
 regulate the FPS, the Window keeps track of the current game state and what is supposed to be displayed. The class
